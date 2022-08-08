@@ -2,6 +2,7 @@ plugins {
     id 'com.android.library'
     id 'kotlin-android'
     id 'maven-publish'
+    id 'signing'
 }
 
 android {
@@ -12,7 +13,7 @@ android {
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 32
-        versionName "1.0.0"
+        versionName "1.0.1"
         versionCode 1
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -46,19 +47,6 @@ android {
         unitTests.includeAndroidResources = true
         unitTests.returnDefaultValues = true
     }
-
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-            withJavadocJar()
-        }
-
-        multipleVariants {
-            withSourcesJar()
-            withJavadocJar()
-            allVariants()
-        }
-    }
 }
 
 java {
@@ -69,44 +57,91 @@ java {
 /**
  * Publish Android library to GitHub Packages ======================================================
  */
-def githubProperties = new Properties()
-githubProperties.load(new FileInputStream(rootProject.file("/Volumes/Keybase (michaelavoyan)/team/velocitycareers/mobile/android/github.properties")))
-
 def getVersionName = { ->
     return android.defaultConfig.versionName
 }
-
 def getArtifactId = { ->
     return "vclauth" // Must be lower case!
 }
+def getGroupId = { ->
+    return 'io.velocitycareerlabs'
+}
 
-publishing {
-    publications {
-        bar(MavenPublication) {
-            groupId 'io.velocitycareerlabs'
-            artifactId getArtifactId()
-            version getVersionName()
-            artifact("$buildDir/outputs/aar/${getArtifactId()}-release.aar")
-        }
+task androidSourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
+    if (project.plugins.findPlugin("com.android.library")) {
+        // For Android libraries
+        from android.sourceSets.main.java.srcDirs
+        from android.sourceSets.main.kotlin.srcDirs
+    } else {
+        // For pure Kotlin libraries, in case you have them
+        from sourceSets.main.java.srcDirs
+        from sourceSets.main.kotlin.srcDirs
     }
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            /** Configure path of your package repository on Github
-             ** Replace GITHUB_USERID with your/organisation Github userID
-             ** and REPOSITORY with the repository name on GitHub
-             */
-            url = uri("https://maven.pkg.github.com/velocitycareerlabs/VCLAuth-Kotlin")
-            credentials {
-                /** Create github.properties in root project folder file with
-                 ** gpr.usr=GITHUB_USER_ID & gpr.key=PERSONAL_ACCESS_TOKEN
-                 ** Set env variable GPR_USER & GPR_API_KEY if not adding a properties file**/
+}
 
-                username = githubProperties['gpr.usr'] ?: System.getenv("GPR_USER")
-                password = githubProperties['gpr.key'] ?: System.getenv("GPR_API_KEY")
+artifacts {
+    archives androidSourcesJar
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                groupId getGroupId()
+                artifactId getArtifactId()
+                version getVersionName()
+
+                // Two artifacts, the `aar` (or `jar`) and the sources
+                if (project.plugins.findPlugin("com.android.library")) {
+                    from components.release
+                } else {
+                    from components.java
+                }
+
+                artifact androidSourcesJar
+
+                // Mostly self-explanatory metadata
+                pom {
+                    name = getArtifactId()
+                    // Library description
+                    description = 'User authorization Android library'
+                    // Library Github URL
+                    url = 'https://github.com/velocitycareerlabs/AuthAndroid'
+                    licenses {
+                        license {
+                            name = 'Apache License 2.0'
+                            // Library license
+                            url = 'https://github.com/velocitycareerlabs/AuthAndroid/blob/dev/VCLAuth/LICENSE'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'velocitycareerlabs'
+                            name = 'Michael Avoyan'
+                            email = 'michael.avoyan@velocitycareerlabs.com'
+                        }
+                    }
+
+                    scm {
+                        // Library info on Github
+                        connection = 'scm:github.com/velocitycareerlabs/AuthAndroid.git'
+                        developerConnection = 'scm:git:ssh://github.com/velocitycareerlabs/AuthAndroid.git'
+                        url = 'https://github.com/velocitycareerlabs/AuthAndroid'
+                    }
+                }
             }
         }
     }
+}
+
+signing {
+    useInMemoryPgpKeys(
+            rootProject.ext.signingKeyId,
+            rootProject.ext.signingPrivateKey,
+            rootProject.ext.signingPassword,
+    )
+    sign publishing.publications
 }
 
 repositories {
