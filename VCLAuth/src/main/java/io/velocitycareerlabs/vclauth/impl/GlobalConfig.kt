@@ -16,7 +16,4 @@ object GlobalConfig {
     const val LogTagPrefix = "VCLAuth "
 
     val IsLoggerOn get() = IsDebug
-
-    // TODO: Will be remotely configurable
-    var IsToLoadFromCacheInitialization = false
 }
