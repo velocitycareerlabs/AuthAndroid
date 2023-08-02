@@ -32,6 +32,11 @@ interface VCLAuth {
     )
 
     /**
+     * Invalidates a authentication identification dialog
+     */
+    fun cancelAuthentication()
+
+    /**
      * Navigates to device's security settings screen for authentication setup
      */
     fun openSecuritySettings(

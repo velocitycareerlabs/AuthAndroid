@@ -20,11 +20,16 @@ import io.velocitycareerlabs.vclauth.api.VCLAuth
 import io.velocitycareerlabs.vclauth.api.VCLError
 import io.velocitycareerlabs.vclauth.api.entities.VCLAuthConfig
 import io.velocitycareerlabs.vclauth.impl.domain.executors.Executor
+import io.velocitycareerlabs.vclauth.impl.utils.VCLLog
 import java.lang.Exception
 
 class VCLAuthImpl(
     private val executor: Executor
 ): VCLAuth {
+
+    val TAG = VCLAuth::class.simpleName
+
+    private var biometricPrompt: BiometricPrompt? = null
 
     private val allowedAuthenticators = BiometricManager.Authenticators.BIOMETRIC_WEAK or
             BiometricManager.Authenticators.BIOMETRIC_STRONG or
@@ -59,18 +64,29 @@ class VCLAuthImpl(
                     description = authConfig.description,
                     isConfirmationRequired = authConfig.isConfirmationRequired
                 )
-
-                // Attach with caller and callback handler
-                val biometricPrompt = initBiometricPrompt(activity, successHandler, errorHandler)
-
+                if(biometricPrompt == null) {
+                    // Attach with caller and callback handler
+                    biometricPrompt = initBiometricPrompt(activity, successHandler, errorHandler)
+                }
                 // Authenticate with a CryptoObject if provided, otherwise default authentication
-                biometricPrompt.apply {
+                biometricPrompt?.apply {
                     authConfig.cryptoObject?.let { cryptoObject ->
-                        authenticate(promptInfo, cryptoObject)
+                        this.authenticate(promptInfo, cryptoObject)
                     } ?: authenticate(promptInfo)
                 }
             } catch (e: Exception) {
                 errorHandler(VCLError(e.message))
+            }
+        }
+    }
+
+    override fun cancelAuthentication() {
+        executor.runOnMainThread {
+            try {
+                biometricPrompt?.cancelAuthentication()
+                biometricPrompt = null
+            } catch (e: Exception) {
+                VCLLog.e(TAG, "", e)
             }
         }
     }
