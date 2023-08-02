@@ -80,20 +80,24 @@ class VCLAuthImpl(
         }
     }
 
-    override fun cancelAuthentication() {
+    override fun cancelAuthentication(
+        successHandler: () -> Unit,
+        errorHandler: (VCLError) -> Unit
+    ) {
         executor.runOnMainThread {
             try {
                 biometricPrompt?.cancelAuthentication()
                 biometricPrompt = null
+                successHandler()
             } catch (e: Exception) {
-                VCLLog.e(TAG, "", e)
+                errorHandler(VCLError(e.message))
             }
         }
     }
 
     override fun openSecuritySettings(
         context: Context,
-        successHandler: (Boolean) -> Unit,
+        successHandler: () -> Unit,
         errorHandler: (VCLError) -> Unit
     ) {
         executor.runOnMainThread {
@@ -105,7 +109,7 @@ class VCLAuthImpl(
                     ),
                     null
                 )
-                successHandler(true)
+                successHandler()
             } catch (e: Exception) {
                 errorHandler(VCLError(e.message))
             }

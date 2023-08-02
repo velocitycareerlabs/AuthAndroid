@@ -58,8 +58,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnOpenSecuritySettings.setOnClickListener {
             vclAuth.openSecuritySettings(
                 this,
-                successHandler = { isOpen ->
-                    Log.d(TAG, "VCL Security settings open: $isOpen")
+                successHandler = {
+                    Log.d(TAG, "VCL Security settings opened")
                 },
                 errorHandler = { error ->
                     Log.e(TAG, "VCL Security settings open error: $error")
