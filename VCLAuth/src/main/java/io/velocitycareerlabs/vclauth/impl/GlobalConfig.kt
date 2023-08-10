@@ -9,7 +9,6 @@ package io.velocitycareerlabs.vclauth.impl
 import io.velocitycareerlabs.vclauth.BuildConfig
 
 object GlobalConfig {
-    const val VclPackage = BuildConfig.LIBRARY_PACKAGE_NAME
 
     val IsDebug = BuildConfig.DEBUG
 

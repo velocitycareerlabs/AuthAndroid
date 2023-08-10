@@ -14,5 +14,5 @@ data class VCLAuthConfig(
     val subtitle: String = "",
     val description: String = "",
     val cryptoObject: BiometricPrompt.CryptoObject? = null,
-    val isConfirmationRequired: Boolean = true
+    val isConfirmationRequired: Boolean = false
 )

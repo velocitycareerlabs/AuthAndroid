@@ -32,19 +32,11 @@ interface VCLAuth {
     )
 
     /**
-     * Invalidates a authentication identification dialog
-     */
-    fun cancelAuthentication(
-        successHandler: () -> Unit,
-        errorHandler: (VCLError) -> Unit
-    )
-
-    /**
      * Navigates to device's security settings screen for authentication setup
      */
     fun openSecuritySettings(
         context: Context,
-        successHandler: () -> Unit,
+        successHandler: (Boolean) -> Unit,
         errorHandler: (VCLError) -> Unit
     )
 }
