@@ -1,6 +1,9 @@
 /**
  * Copyright 2022 Velocity Career Labs inc.
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * Copyright 2022 Velocity Career Labs inc.
+ * SPDX-License-Identifier: Apache-2.0
  */
 package com.vcl.authandroid
 
@@ -59,7 +62,7 @@ class MainActivity : AppCompatActivity() {
             vclAuth.openSecuritySettings(
                 this,
                 successHandler = { isOpen ->
-                    Log.d(TAG, "VCL Security settings open: $isOpen")
+                    Log.d(TAG, "VCL Security settings is open: $isOpen")
                 },
                 errorHandler = { error ->
                     Log.e(TAG, "VCL Security settings open error: $error")
