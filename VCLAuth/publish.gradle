@@ -22,7 +22,7 @@ afterEvaluate {
                 artifact(tasks.named("generateJavadocJar").get()) { classifier = "javadoc" }
 
                 pom {
-                    name = 'vclauth'
+                    name = artifactId
                     packaging = 'aar'
                     description = 'Velocity Career Labs Android SDK consumer app.'
                     url = 'https://github.com/velocitycareerlabs/AuthAndroid'
@@ -57,7 +57,7 @@ afterEvaluate {
                 artifact(tasks.named("generateJavadocJar").get()) { classifier = "javadoc" }
 
                 pom {
-                    name = 'vclauth'
+                    name = artifactId
                     packaging = 'aar'
                     description = 'Velocity Career Labs Android SDK RC build.'
                     url = 'https://github.com/velocitycareerlabs/AuthAndroid'
