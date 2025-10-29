@@ -60,12 +60,11 @@ jobs:
 
       - name: 🧪 Generate POM File
         run: |
-#          ./gradlew :VCLAuth:generatePomFileFor${{ env.PUBLICATION_NAME }}Publication
-#          cp VCLAuth/build/publications/${{ env.PUBLICATION_NAME }}/pom-default.xml VCLAuth/target/staging-deploy/io/velocitycareerlabs/vclauth/$RELEASE_VERSION/${{ env.POM_FILE_NAME }}
           ./gradlew :VCLAuth:generatePomFileFor${{ env.PUBLICATION_NAME }}Publication
           mkdir -p VCLAuth/target/staging-deploy/io/velocitycareerlabs/vclauth/$RELEASE_VERSION
           cp VCLAuth/build/publications/${{ env.PUBLICATION_NAME }}/pom-default.xml \
              VCLAuth/target/staging-deploy/io/velocitycareerlabs/vclauth/$RELEASE_VERSION/${{ env.POM_FILE_NAME }}
+
       - name: 📂 List staged artifacts
         run: |
           ls -R VCLAuth/target/staging-deploy
