@@ -1,0 +1,92 @@
+name: VCLAuthAndroid-SDK-Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - rc
+          - prod
+
+jobs:
+  release-android-sdk:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🧾 Checkout code
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: 🛠️ Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: 📝 Get version from build.gradle
+        run: |
+          VERSION=$(grep 'publishVersion *= *".*"' VCLAuth/build.gradle | sed -n 's/.*publishVersion *= *"\([^"]*\)".*/\1/p')
+          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Found version: $VERSION"
+
+      - name: 🔧 Set publication name and POM file name
+        run: |
+          PUB_NAME=
+          echo "PUBLICATION_NAME=${{ github.event.inputs.environment == 'rc' && 'rc' || 'release' }}" >> $GITHUB_ENV
+          echo "POM_FILE_NAME=vclauth-${{ github.event.inputs.environment == 'rc' && 'rc-' || '' }}${RELEASE_VERSION}.pom" >> $GITHUB_ENV
+
+      - name: 🧪 Build AAR + Sources + Javadoc
+        run: |
+          ./gradlew clean \
+            :VCLAuth:assembleAll${{ github.event.inputs.environment == 'rc' && 'Rc' || 'Release' }} \
+            -PprojectVersion=${RELEASE_VERSION} \
+            -Pprerelease=${{ github.event.inputs.environment == 'rc' }} \
+            --stacktrace
+
+      - name: ✅ Verify expected artifacts exist
+        run: |
+          ./gradlew \
+            :VCLAuth:verifyExpectedArtifactsExist
+
+      - name: 📦 Stage Artifacts
+        run: |
+          ./gradlew :VCLAuth:stageArtifacts
+
+      - name: 🧪 Generate POM File
+        run: |
+          ./gradlew :VCLAuth:generatePomFileFor${{ env.PUBLICATION_NAME }}Publication
+          cp VCLAuth/build/publications/${{ env.PUBLICATION_NAME }}/pom-default.xml VCLAuth/target/staging-deploy/io/velocitycareerlabs/vclauth/$RELEASE_VERSION/${{ env.POM_FILE_NAME }}
+
+      - name: 📂 List staged artifacts
+        run: |
+          ls -R VCLAuth/target/staging-deploy
+
+      - name: 🚀 Run JReleaser full-release
+        if: github.event.inputs.environment != 'dev'
+        uses: jreleaser/release-action@v2
+        with:
+          version: 1.18.0
+          arguments: >
+            full-release
+            --config-file=jreleaser.template.yml
+            --debug
+        env:
+          JRELEASER_PROJECT_JAVA_ARTIFACT_ID: ${{ github.event.inputs.environment == 'rc' && 'vclauth-rc' || 'vclauth' }}
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_TOKEN_USERNAME }}
+          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_TOKEN_PASSWORD }}
+          JRELEASER_MAVENCENTRAL_STAGE: ${{ secrets.MAVEN_CENTRAL_STAGING_PROFILE_ID }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_PROJECT_VERSION: ${{ env.RELEASE_VERSION }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.MAVEN_CENTRAL_GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.MAVEN_CENTRAL_GPG_PRIVATE_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.MAVEN_CENTRAL_SIGNING_PASSWORD }}
+          JRELEASER_TAG_NAME: ${{ github.event.inputs.environment == 'rc' && 'rc-' || '' }}${{ env.RELEASE_VERSION }}
+          JRELEASER_RELEASE_NAME: ${{ github.event.inputs.environment == 'rc' && 'Release Candidate ' || '' }}${{ env.RELEASE_VERSION }}
+          JRELEASER_PRERELEASE_PATTERN: ${{ github.event.inputs.environment == 'rc' && env.RELEASE_VERSION || 'OFF' }}
+          

@@ -1,37 +1,44 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
-    ext.kotlin_version = '1.7.21'
+    ext.kotlin_version = "2.1.0"
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.4.0'
+        classpath 'com.android.tools.build:gradle:8.13.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-
+//        classpath "org.jetbrains.kotlin:kotlin-android-extensions:$kotlin_version"
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
 }
 
-plugins {
-    // Automation plugin
-    id "io.github.gradle-nexus.publish-plugin" version "1.1.0"
-}
-
-// Publishing scripts
-apply from: "${rootDir}/publish-core.gradle"
-
 allprojects {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url "$buildDir/VCLAuth"
-        }
     }
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
+}
+
+tasks.register("jreleaserPublishRelease") {
+    group = "publishing"
+    description = "Forward jreleaserPublishRelease to VCLAuth module"
+    dependsOn(":VCLAuth:jreleaserPublishRelease")
+}
+
+tasks.register("jreleaserPublishRc") {
+    group = "publishing"
+    description = "Forward jreleaserPublishRc to VCLAuth module"
+    dependsOn(":VCLAuth:jreleaserPublishRc")
+}
+
+tasks.register("jreleaserPublishDry") {
+    group = "publishing"
+    description = "Forward jreleaserPublishDry to VCLAuth module"
+    dependsOn(":VCLAuth:jreleaserPublishDry")
 }

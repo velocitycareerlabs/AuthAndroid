@@ -5,161 +5,174 @@ plugins {
     id 'signing'
 }
 
+ext {
+    publishCode = 8
+    publishVersion = "1.7.0"
+    publishArtifactId = "vclauth"
+    publishGroupId = "io.velocitycareerlabs.vclauth"
+}
+
+group = publishGroupId
+version = publishVersion
+
 android {
-    compileSdkVersion 33
-    buildToolsVersion "30.0.3"
-    namespace 'io.velocitycareerlabs.vclauth'
+    namespace = publishGroupId
+    compileSdk = 36
 
     defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 33
-        versionName "1.4.0"
-        versionCode 7
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles "consumer-rules.pro"
+        minSdk = 24
+        targetSdk = 36
+        versionCode = publishCode
+        versionName = version
+        consumerProguardFiles("consumer-rules.pro")
+        buildConfigField "String", "VERSION_NAME", "\"${versionName}\""
+        buildConfigField "int", "VERSION_CODE", "${versionCode}"
     }
+
 
     buildTypes {
         debug {
-//            useProguard false
-            minifyEnabled false
-            shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled = false
+            shrinkResources = false
+        }
+        rc {
+            initWith(debug)
+            buildConfigField "String", "VERSION_NAME", "\"${defaultConfig.versionName}-rc\""
+            buildConfigField "int", "VERSION_CODE", "${defaultConfig.versionCode}"
         }
         release {
-//            useProguard true
-            minifyEnabled false
-            shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            initWith(debug)
+            buildConfigField "String", "VERSION_NAME", "\"${defaultConfig.versionName}\""
+            buildConfigField "int", "VERSION_CODE", "${defaultConfig.versionCode}"
         }
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
         jvmTarget = '1.8'
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     testOptions {
         unitTests.includeAndroidResources = true
         unitTests.returnDefaultValues = true
     }
-}
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-}
-
-/**
- * Publish Android library to GitHub Packages ======================================================
- */
-def getVersionName = { ->
-    return android.defaultConfig.versionName
-}
-def getArtifactId = { ->
-    return "vclauth" // Must be lower case!
-}
-def getGroupId = { ->
-    return 'io.velocitycareerlabs'
-}
-
-task androidSourcesJar(type: Jar) {
-    archiveClassifier.set('sources')
-    if (project.plugins.findPlugin("com.android.library")) {
-        // For Android libraries
-        from android.sourceSets.main.java.srcDirs
-        from android.sourceSets.main.kotlin.srcDirs
-    } else {
-        // For pure Kotlin libraries, in case you have them
-        from sourceSets.main.java.srcDirs
-        from sourceSets.main.kotlin.srcDirs
-    }
-}
-
-artifacts {
-    archives androidSourcesJar
-}
-
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                groupId getGroupId()
-                artifactId getArtifactId()
-                version getVersionName()
-
-                // Two artifacts, the `aar` (or `jar`) and the sources
-                if (project.plugins.findPlugin("com.android.library")) {
-                    from components.release
-                } else {
-                    from components.java
-                }
-
-                artifact androidSourcesJar
-
-                // Mostly self-explanatory metadata
-                pom {
-                    name = getArtifactId()
-                    // Library description
-                    description = 'User authorization Android library'
-                    // Library Github URL
-                    url = 'https://github.com/velocitycareerlabs/AuthAndroid'
-                    licenses {
-                        license {
-                            name = 'Apache License 2.0'
-                            // Library license
-                            url = 'https://github.com/velocitycareerlabs/AuthAndroid/blob/dev/VCLAuth/LICENSE'
-                        }
-                    }
-                    developers {
-                        developer {
-                            id = 'velocitycareerlabs'
-                            name = 'Michael Avoyan'
-                            email = 'michael.avoyan@velocitycareerlabs.com'
-                        }
-                    }
-
-                    scm {
-                        // Library info on Github
-                        connection = 'scm:github.com/velocitycareerlabs/AuthAndroid.git'
-                        developerConnection = 'scm:git:ssh://github.com/velocitycareerlabs/AuthAndroid.git'
-                        url = 'https://github.com/velocitycareerlabs/AuthAndroid'
-                    }
-                }
+    libraryVariants.configureEach { variant ->
+        variant.outputs.all {
+            if (variant.name == "release") {
+                outputFileName = "${publishArtifactId}-${publishVersion}.aar"
+            } else if (variant.name == "rc") {
+                outputFileName = "${publishArtifactId}-${publishVersion}-rc.aar"
             }
         }
     }
 }
 
-signing {
-    useInMemoryPgpKeys(
-            rootProject.ext.signingKeyId,
-            rootProject.ext.signingPrivateKey,
-            rootProject.ext.signingPassword,
-    )
-    sign publishing.publications
-}
+apply from: 'publish.gradle'
 
 repositories {
+    google()
     mavenCentral()
+    mavenLocal()
 }
 
-/**
- * =================================================================================================
- */
+// === Artifact Tasks ===
+tasks.register("generateSourcesJar", Jar) {
+    group = "assemble"
+    archiveClassifier.set("sources")
+    archiveBaseName.set(publishArtifactId.toLowerCase())
+    from(android.sourceSets.main.java.srcDirs + android.sourceSets.main.kotlin.srcDirs)
+}
+
+tasks.register("generateJavadocJar", Jar) {
+    group = "assemble"
+    archiveClassifier.set("javadoc")
+    archiveBaseName.set(publishArtifactId.toLowerCase())
+    doFirst {
+        def dummyDir = file("${layout.buildDirectory.get()}/empty-javadoc")
+        dummyDir.mkdirs()
+        def dummyJava = new File(dummyDir, "placeholder.java")
+        if (!dummyJava.exists()) dummyJava.text = "/** Placeholder for javadoc */"
+        from(dummyDir)
+    }
+}
+
+tasks.register("generateSourcesAndJavadocJar") {
+    group = "assemble"
+    description = "Generates sources.jar and javadoc.jar"
+    dependsOn("generateSourcesJar", "generateJavadocJar")
+}
+
+tasks.register("assembleAllRelease") {
+    group = "assemble"
+    description = "Generates AAR, sources.jar and javadoc.jar for release"
+    dependsOn("assembleRelease", "generateSourcesAndJavadocJar")
+}
+
+tasks.register("assembleAllRc") {
+    group = "assemble"
+    description = "Generates AAR, sources.jar and javadoc.jar for rc"
+    dependsOn("assembleRc", "generateSourcesAndJavadocJar")
+}
+
+tasks.register("verifyExpectedArtifactsExist") {
+    group = "verification"
+    description = "Prints the contents of key artifact directories"
+    doLast {
+        def printDirContents = { title, dirPath ->
+            println "📂 Contents of ${dirPath}/"
+            def dir = file(dirPath)
+            if (dir.exists() && dir.isDirectory()) {
+                dir.listFiles()?.each { println " - ${it.name}" }
+            } else {
+                println "❌ Directory does not exist: ${dirPath}"
+            }
+        }
+
+        printDirContents("AAR", "build/outputs/aar")
+        printDirContents("LIBS", "build/libs")
+    }
+}
+
+tasks.register("stageArtifacts", Copy) {
+    def mavenPath = "${publishGroupId.replace('.', '/')}/${publishArtifactId}/${publishVersion}/"
+    from("${layout.buildDirectory.get()}/outputs/aar") {
+        include("**/*.aar")
+    }
+    from("${layout.buildDirectory.get()}/libs") {
+        include("**/*.jar")
+    }
+    into("target/staging-deploy/${mavenPath}")
+}
 
 dependencies {
+    implementation 'androidx.core:core-ktx:1.17.0'
+    implementation "androidx.security:security-crypto:1.1.0"
 
-    implementation 'androidx.core:core-ktx:1.9.0'
-    implementation 'androidx.appcompat:appcompat:1.6.0'
-    implementation 'com.google.android.material:material:1.7.0'
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
+
+    // Required -- JUnit 4 framework
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    testImplementation 'androidx.test:core:1.7.0'
+
+    testImplementation 'io.mockk:mockk:1.14.6'
+
+    testImplementation "org.mockito:mockito-inline:5.2.0"
+    // Required -- JSON framework
+    testImplementation 'org.json:json:20250517'
+    // json assert
+    testImplementation 'org.skyscreamer:jsonassert:1.5.3'
+
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
 
     implementation "androidx.biometric:biometric:1.1.0"
 }
