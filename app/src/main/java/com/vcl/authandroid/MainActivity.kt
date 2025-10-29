@@ -15,10 +15,9 @@ import com.vcl.authandroid.databinding.ActivityMainBinding
 import io.velocitycareerlabs.vclauth.api.VclAuthProvider
 import io.velocitycareerlabs.vclauth.api.entities.VCLAuthConfig
 
-
 class MainActivity : AppCompatActivity() {
 
-    private val TAG = "VCL"
+    private val TAG = "VCLAuth"
 
     private lateinit var binding: ActivityMainBinding
 
@@ -34,7 +33,7 @@ class MainActivity : AppCompatActivity() {
             vclAuth.isAuthenticationAvailable(
                 context = this,
                 successHandler = { isAuthenticationAvailable ->
-                    Log.d(TAG, "VCL isAuthenticationAvailable: $isAuthenticationAvailable")
+                    Log.d(TAG, "VCLAuth isAuthenticationAvailable: $isAuthenticationAvailable")
                     if (isAuthenticationAvailable) {
                         vclAuth.authenticate(
                             activity = this,
@@ -42,10 +41,10 @@ class MainActivity : AppCompatActivity() {
                                 title = "The passcode you use to unlock this Phone, can also be used to access your Velocity account."
                             ),
                             successHandler = { isRecognized ->
-                                Log.d(TAG, "VCL User recognized: $isRecognized")
+                                Log.d(TAG, "VCLAuth User recognized: $isRecognized")
                             },
                             errorHandler = { error ->
-                                Log.e(TAG, "VCL Auth error: $error")
+                                Log.e(TAG, "VCLAuth error: $error")
                                 showAlert("Auth error", error.message ?: "")
                             })
                     } else {
@@ -53,7 +52,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 },
                 errorHandler = { error ->
-                    Log.e(TAG, "VCL isAuthenticationAvailable error: $error")
+                    Log.e(TAG, "VCLAuth isAuthenticationAvailable error: $error")
                     showAlert("isAuthenticationAvailable error", error.message ?: "")
                 })
         }
@@ -62,10 +61,10 @@ class MainActivity : AppCompatActivity() {
             vclAuth.openSecuritySettings(
                 this,
                 successHandler = { isOpen ->
-                    Log.d(TAG, "VCL Security settings is open: $isOpen")
+                    Log.d(TAG, "VCLAuth Security settings is open: $isOpen")
                 },
                 errorHandler = { error ->
-                    Log.e(TAG, "VCL Security settings open error: $error")
+                    Log.e(TAG, "VCLAuth Security settings open error: $error")
                 })
         }
     }

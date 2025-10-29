@@ -1,0 +1,12 @@
+name: VCLAuthAndroid-SDK-Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - release/**
+
+jobs:
+  test-on-pr:
+    uses: ./.github/workflows/android-sdk-reusable-tests.yml
+    secrets: inherit

@@ -120,7 +120,7 @@ class VCLAuthImpl(
 
         // Use Device Credentials if allowed, otherwise show Cancel Button
         builder.apply {
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
                 setDeviceCredentialAllowed(true)
             } else {
                 setAllowedAuthenticators(allowedAuthenticators)
