@@ -51,4 +51,4 @@ deploy:
         javadocJar: true
         verifyPom: false
         stagingRepositories:
-          - VCL/target/staging-deploy
+          - VCLAuth/target/staging-deploy
